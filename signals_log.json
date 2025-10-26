@@ -1,0 +1,35 @@
+[
+  {
+    "id": "FOOD.JK_1761452611",
+    "timestamp": "2025-10-26T11:23:31.536107",
+    "ticker": "FOOD.JK",
+    "entry_price": 282.0,
+    "tp": 296.1,
+    "sl": 267.9,
+    "signal": "BUY",
+    "status": "OPEN",
+    "updated_at": null
+  },
+  {
+    "id": "PADA.JK_1761452612",
+    "timestamp": "2025-10-26T11:23:32.712247",
+    "ticker": "PADA.JK",
+    "entry_price": 108.0,
+    "tp": 113.4,
+    "sl": 102.6,
+    "signal": "BUY",
+    "status": "OPEN",
+    "updated_at": null
+  },
+  {
+    "id": "ENZO.JK_1761452615",
+    "timestamp": "2025-10-26T11:23:35.753933",
+    "ticker": "ENZO.JK",
+    "entry_price": 40.0,
+    "tp": 42.0,
+    "sl": 38.0,
+    "signal": "BUY",
+    "status": "OPEN",
+    "updated_at": null
+  }
+]

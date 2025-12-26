@@ -2,8 +2,8 @@ import requests
 from time import sleep
 
 
-def get_top_gainers(limit=50, retries=3, backoff=1):
-    """Fetch top gainers from TradingView with simple retries and safer parsing.
+def get_top_volume(limit=50, retries=3, backoff=1):
+    """Fetch top volume stocks from TradingView with simple retries and safer parsing.
 
     Returns a list of tickers normalized to Yahoo/JK format (e.g. BBRI.JK).
     """
@@ -11,13 +11,12 @@ def get_top_gainers(limit=50, retries=3, backoff=1):
 
     payload = {
         "filter": [
-            {"left": "change", "operation": "nempty"},
-            {"left": "change", "operation": "greater", "right": 0}
+            {"left": "volume", "operation": "nempty"}
         ],
         "options": {"lang": "id"},
         "symbols": {"query": {"types": []}, "tickers": []},
         "columns": ["name", "close", "change", "volume"],
-        "sort": {"sortBy": "change", "sortOrder": "desc"},
+        "sort": {"sortBy": "volume", "sortOrder": "desc"},
         "range": [0, limit]
     }
 
@@ -29,7 +28,7 @@ def get_top_gainers(limit=50, retries=3, backoff=1):
     attempt = 0
     while attempt < retries:
         try:
-            print("🚀 Mengambil Top Gainers dari TradingView...")
+            print("🚀 Mengambil Top Volume Stocks dari TradingView...")
             response = requests.post(url, json=payload, headers=headers, timeout=10)
             response.raise_for_status()
             data = response.json()
@@ -41,7 +40,7 @@ def get_top_gainers(limit=50, retries=3, backoff=1):
                 return []
             sleep(backoff * attempt)
 
-    gainers = []
+    volume_stocks = []
     for d in data.get("data", []):
         s = d.get("s") or d.get("symbol")
         if not s:
@@ -58,8 +57,8 @@ def get_top_gainers(limit=50, retries=3, backoff=1):
             if isinstance(s, str) and ":" not in s:
                 ticker = s + ".JK"
 
-        if ticker and ticker not in gainers:
-            gainers.append(ticker)
+        if ticker and ticker not in volume_stocks:
+            volume_stocks.append(ticker)
 
-    print(f"✅ Ditemukan {len(gainers)} Top Gainers:", gainers[:limit])
-    return gainers[:limit]
+    print(f"✅ Ditemukan {len(volume_stocks)} Top Volume:", volume_stocks[:limit])
+    return volume_stocks[:limit]

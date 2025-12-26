@@ -1,68 +1,92 @@
-"""Simple scheduler to run the bot at 07:00 and 12:00 WIB (Asia/Jakarta).
-
-This implementation uses the standard library only (zoneinfo) and a sleep
-loop. It imports `run_bot` from `main.py` so ensure `main.py` does not
-execute the bot on import (it doesn't: guarded by __name__ == '__main__').
-
-Run with:
-    python scheduler.py
-
-The script runs forever and calls `run_bot()` at the two scheduled times.
 """
+Scheduler bot saham:
+Menjalankan dua fungsi bersamaan di setiap jadwal:
+1. run_bot() → ambil & kirim sinyal baru
+2. update_open_signals() → cek sinyal open (TP/SL)
+
+Jadwal WIB:
+- 07:58
+- 12:00
+- 17:00
+- 20:00
+"""
+
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 import time as time_module
 import logging
 
 from main import run_bot
+from update_signals import update_open_signals
 
-
+# Zona waktu Indonesia Barat
 JAKARTA = ZoneInfo("Asia/Jakarta")
-SCHEDULE_TIMES = [time(7, 0), time(12, 0)]  # 07:00 and 12:00 WIB
+
+# Jadwal eksekusi harian
+SCHEDULE_TIMES = [
+    time(7, 58),
+    time(12, 0),
+    time(17, 0),
+    time(20, 0),
+]
 
 
 def _next_run(now: datetime) -> datetime:
-    """Return the next datetime (tz-aware) to run the job after `now`."""
+    """Tentukan waktu berikutnya bot dijalankan setelah waktu `now`."""
     today = now.date()
     candidates = []
     for t in SCHEDULE_TIMES:
         dt = datetime.combine(today, t).replace(tzinfo=JAKARTA)
         if dt <= now:
-            # If the time already passed today, schedule for tomorrow
-            dt = dt + timedelta(days=1)
+            dt += timedelta(days=1)
         candidates.append(dt)
-
-    # Return the earliest candidate
     return min(candidates)
 
 
 def main_loop():
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
-    logging.info("Scheduler started. Will run at: %s", ", ".join(t.strftime("%H:%M") for t in SCHEDULE_TIMES))
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s WIB - %(levelname)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    logging.info("🕐 Scheduler aktif. Jadwal bot: %s",
+                 ", ".join(t.strftime("%H:%M") for t in SCHEDULE_TIMES))
 
     while True:
         now = datetime.now(JAKARTA)
         next_dt = _next_run(now)
         wait_seconds = (next_dt - now).total_seconds()
-        logging.info("Next run scheduled at %s (in %.0f seconds)", next_dt.isoformat(), wait_seconds)
 
-        # Sleep until next run (wake early if interrupted)
+        logging.info(
+            "⏳ Jadwal berikutnya: %s (dalam %.0f detik)",
+            next_dt.strftime("%Y-%m-%d %H:%M:%S"),
+            wait_seconds,
+        )
+
         try:
             if wait_seconds > 0:
                 time_module.sleep(wait_seconds)
         except KeyboardInterrupt:
-            logging.info("Scheduler stopped by user")
+            logging.info("⛔ Scheduler dihentikan oleh user.")
             return
 
-        # Execute the bot
-        try:
-            logging.info("Running bot at %s", datetime.now(JAKARTA).isoformat())
-            run_bot()
-            logging.info("Run finished")
-        except Exception as e:
-            logging.exception("Error while running bot: %s", e)
+        logging.info("🚀 Menjalankan bot pada %s", datetime.now(JAKARTA).strftime("%Y-%m-%d %H:%M:%S"))
 
-        # Small sleep to avoid immediate re-run in case of clock rounding
+        try:
+            # Langsung jalankan dua proses: run_bot lalu update_open_signals
+            logging.info("📈 Menjalankan pengambilan sinyal baru...")
+            run_bot()
+
+            logging.info("🔄 Menjalankan update sinyal open (cek TP/SL)...")
+            update_open_signals()
+
+            logging.info("✅ Kedua tugas selesai dijalankan.")
+
+        except Exception as e:
+            logging.exception("❌ Error saat menjalankan bot: %s", e)
+
+        # Tunggu 1 detik agar tidak double-trigger
         time_module.sleep(1)
 
 

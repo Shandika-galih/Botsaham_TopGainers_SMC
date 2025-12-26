@@ -27,10 +27,28 @@ def add_signal(result: Dict[str, Any]):
 
     result is expected to contain keys: ticker, price, tp, sl, signal
     """
+    ticker = result.get("ticker")
+    data = _read_log()
+
+    # If there is already an OPEN signal for the same ticker, avoid creating a duplicate.
+    # Instead update the existing entry (refresh entry_price/tp/sl/timestamp) so we keep
+    # a single authoritative OPEN entry per ticker.
+    for item in data:
+        if item.get("ticker") == ticker and item.get("status") == "OPEN":
+            # update fields and return existing entry
+            item["entry_price"] = result.get("price")
+            item["tp"] = result.get("tp")
+            item["sl"] = result.get("sl")
+            item["signal"] = result.get("signal")
+            item["timestamp"] = datetime.utcnow().isoformat()
+            _write_log(data)
+            return item
+
+    # No existing OPEN entry — create a new one
     entry = {
-        "id": f"{result.get('ticker')}_{int(datetime.utcnow().timestamp())}",
+        "id": f"{ticker}_{int(datetime.utcnow().timestamp())}",
         "timestamp": datetime.utcnow().isoformat(),
-        "ticker": result.get("ticker"),
+        "ticker": ticker,
         "entry_price": result.get("price"),
         "tp": result.get("tp"),
         "sl": result.get("sl"),
@@ -38,7 +56,6 @@ def add_signal(result: Dict[str, Any]):
         "status": "OPEN",
         "updated_at": None,
     }
-    data = _read_log()
     data.append(entry)
     _write_log(data)
     return entry

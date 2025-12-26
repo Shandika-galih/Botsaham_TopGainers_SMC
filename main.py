@@ -1,11 +1,11 @@
-from get_top_gainers import get_top_gainers
+from get_top_gainers import get_top_volume
 from analysis import analyze_ticker
 from telegram_bot import send_signal
 
 def run_bot():
-    tickers = get_top_gainers(limit=50)
+    tickers = get_top_volume(limit=50)
     if not tickers:
-        print("⚠️ Tidak ada data top gainers, analisis fallback ke BBRI.JK")
+        print("⚠️ Tidak ada data top volume, analisis fallback ke BBRI.JK")
         tickers = ["BBRI.JK"]
 
     for t in tickers:
